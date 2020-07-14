@@ -8,11 +8,13 @@ output:
 
 ## Method
 
-Data acquisition required extensive cleaning and testing. We developed the [`uk-boards`](https://pypi.org/project/uk-boards/) python library to automate the process, ensure reproducibility and foster further work and collaboration. The Companies House and Charities Commission APIs are fundamentally different, but with this work we began a process that can aid harmonising our measurements across the sectors. Given X% of these institutions are joint companies and charities, understanding metrics of influence and importance such as degree, betweeness and closeness should join these networks in a systematic way, and we have applied for further funding to rigorously test matching across the companies and charities datasets.
+Data acquisition required extensive cleaning and testing. We developed the [`uk-boards`](https://pypi.org/project/uk-boards/) python library to automate the process, ensure reproducibility and foster further work and collaboration. The [Companies House](https://developer.companieshouse.gov.uk/api/docs/) and [Charities Commission](https://apps.charitycommission.gov.uk/Showcharity/API/SearchCharitiesV1/Docs/DevGuideHome.aspx) APIs are fundamentally different, but with this work we began a process that can aid harmonising our measurements across the sectors. Given 75% of these institutions are joint companies and charities, understanding metrics of influence and importance such as degree, betweeness and closeness should join these networks in a systematic way, and we have applied for further funding to rigorously test matching across the companies and charities datasets.
 
 ### Snowball sampling
 
-For both the Companies and Charities board interlock networks we employed snowball sampling, comparing our metrics by 1, 2 and 3 hop sampling thus far. The Largest Connected Component in the 2 and 3 hop led to similar rankings of board members and institutions. <!--THIS NEEDS CHECKING--> For our purposes in this work we focus on 1 hop comparative ease of interpretation. It’s also worth noting that we excluded records of local councils as they are not straightforwardly registered as companies or charities.
+833 instituitions are portfolio funded by Arts Council England, 740 of which are registered as companies and 649 as charities. 621 of these instituions are registered as both, but matching records of board members across these datasets is challenging, hence our bid for additional funding to develop means of best matching records across these datasets and potential duplicates within both datasets, especially at the board member level. 
+
+For both the Companies and Charities board interlock networks we employed snowball sampling, comparing our metrics by 1, 2 and 3 hop sampling thus far. The Largest Connected Component in the 2 and 3 hop led to similar rankings of board members and institutions. For our purposes in this work we focus on 1 hop comparative ease of interpretation. It’s also worth noting that we excluded records of local councils as they are not straightforwardly registered as companies or charities.
 
 ### Companies
 
@@ -21,12 +23,15 @@ The Companies House API is RESTful and documentation suggests it supports query 
 We used the requests library to structure queries from the curated list of companies as seed nodes. From each the list of board members were queries from the API, and in the structured JSON format we then filtered to currently active board members. Additional information on inactive board members and individuals with significant ownership of companies is available and supported by the library but we excluded those for the purpose of this project. We used a caching structure to avoid duplicate queries as the id of both companies and board members are unique and the structure of the queries is recursive. This then meant only new records of board members would be queried, which had significant improvements in query time as there are temporal limits on queries.
 
 For each hop, the list of board members would then lead to queries of the companies they sit on and for any new companies we then queried their board members etc. The caching structure was again crucial to limiting duplicate queries, as well as filtering on only currently active board membership and currently active companies. The varying categories of companies did lead to significant variations in additional data available, and we found it best to stick with the JSON format for saving and processing this work.
+
 It’s also worth noting that many board members, including the most central for both 1 and 2 hops are firms. This can mean individuals representing the firm will attend meetings, provide a vote etc. but can serve a fundamentally different social tie than individuals who are consistent members. This may also have implications for the length of board membership, and we have indicated this information in the data structure employ
 
 ### Charities
 
 The Charities Commision provides a SOAP API and we used the zeep python library. They do not provide historical data so parameters were less of a concern. Documentation suggests this dataset is updated monthly. There does not appear to be a pagination component of trustees (the charity equivalent of board members) but the documentation is less comprehensive than the Companies House API.
 
-SOAP XML data is considerably more complex to process than JSON, and the API does not adhere to strict SOAP protocols. This required further testing and data cleaning, and much of the data files still included extraneous white space and potential duplications. The uniqueness of ids for charities and trustees w
+SOAP XML data is considerably more complex to process than JSON, and the API does not adhere to strict SOAP protocols. This required further testing and data cleaning, and much of the data includes extraneous white space and potential duplications. The uniqueness of ids for charities and trustees was our means of matching records a minimising duplicate queries in our sampling.
 
 ### Geospatial approximation
+
+Records of companies and charities both include address information and postcodes, so we query the <https://api.postcodes.io/postcodes> API in case the postcodes that raised errors we attempted querying <https://api.postcodes.io/terminated_postcodes/> API. This was successful for company and charity addresses but not for all board members and trustees.
